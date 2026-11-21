@@ -1,0 +1,26 @@
+[package]
+name = "mylock-core"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+argon2 = "0.6.0"
+aes-kw = "0.3.1"
+chacha20poly1305 = "0.11.0"
+hkdf = "0.13.0"
+hmac = "0.13.0"
+sha2 = "0.11.1"
+serde_json = "1.0.154"
+base64 = "0.23.1"
+data-encoding = "2.11.1"
+hex = "0.4.3"
+zeroize = "1.9.1"
+getrandom = "0.4.3"
+
+[dev-dependencies]
+serde_json = "1.0.154"
+hex = "0.4.3"
+# G4 门禁（tests/conformance.rs）要独立计算向量归档的 SHA-256；
+# 与 [dependencies] 同版本，cargo 会复用已编译的 sha2，不引入新依赖树。
+sha2 = "0.11.1"

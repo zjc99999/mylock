@@ -1,0 +1,27 @@
+[package]
+name = "mylock-desktop"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.77.2"
+license = "MIT OR Apache-2.0"
+description = "MyLock 桌面壳（M3 脚手架 · 非产品发布）"
+
+# 独立 workspace：与 core/ 的密码学 workspace 隔离，
+# 避免 Tauri 的重依赖影响 core/ 里已全绿的 21 个测试。
+[workspace]
+
+[build-dependencies]
+tauri-build = { version = "2.7.4", features = [] }
+
+[dependencies]
+tauri = { version = "2.12.5", features = [] }
+serde = { version = "1.0.229", features = ["derive"] }
+serde_json = "1.0.154"
+tokio = { version = "1.54.1", features = ["rt-multi-thread", "macros", "net", "io-util", "time", "sync"] }
+mylock-core = { path = "../../core/crates/mylock-core" }
+mylock-mount = { path = "../../core/crates/mylock-mount" }
+
+[features]
+# 生产构建 / 未指定 devUrl 时嵌入前端资源，勿删。
+default = ["custom-protocol"]
+custom-protocol = ["tauri/custom-protocol"]

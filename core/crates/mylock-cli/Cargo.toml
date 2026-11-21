@@ -1,0 +1,15 @@
+[package]
+name = "mylock-cli"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "独立恢复 CLI（info / verify / export / 凭据轮换），不依赖主 App、不联网"
+
+[[bin]]
+name = "mylock"
+path = "src/main.rs"
+
+[dependencies]
+mylock-core = { path = "../mylock-core" }
+hex = "0.4.3"
+serde_json = "1.0.154"

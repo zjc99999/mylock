@@ -1,0 +1,123 @@
+# ---------------------------------------------------------------------------
+# G4 向量契约门禁（M4 第 1 点）
+#
+# 目的：让 Windows / macOS / Linux 三套桌面工具链各自独立地读同一份逐字节契约、
+# 跑同一份 Rust 实现、算出同一个冻结指纹。三份独立绿灯 = 同一字节输入在三套
+# 工具链上产出同一字节输出（G4 的桌面部分）。
+#
+# 明确不做（诚实边界，见 tests/vectors/CONTRACT.md）：
+#   - Android / iOS 尚未有实现，本工作流**不**把它们计入 needs，也不伪造绿灯；
+#   - 本仓库当前无 .git，此工作流在推送到远端并启用 Actions 后才会实跑；
+#     本机只实测过 Windows 路径。
+#   - G4 只约束固定测试向量，不要求运行时确定性密文。
+# ---------------------------------------------------------------------------
+name: G4 vector conformance
+
+on:
+  push:
+    branches: [main, master, "**"]
+    paths:
+      - "poc/test-vectors.json"
+      - "tests/vectors/**"
+      - "core/**"
+      - "tools/check_vectors.py"
+      - ".gitattributes"
+      - ".github/workflows/vectors.yml"
+  pull_request:
+  workflow_dispatch:
+
+# 同一分支的旧运行自动取消，避免向量频繁改动时堆积。
+concurrency:
+  group: g4-vectors-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  g4-vectors:
+    name: ${{ matrix.os }} / ${{ matrix.rust }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false          # 一个平台红也要看全另外两个平台的结果
+      matrix:
+        os: [windows-latest, macos-latest, ubuntu-latest]
+        rust: [stable]
+    env:
+      # 与 .gitattributes 双保险：禁止 Git 在 checkout 时归一化 EOL
+      GIT_CONFIG_COUNT: 1
+      GIT_CONFIG_KEY_0: core.autocrlf
+      # 必须是字符串 "false"：YAML 裸 false 会被解析成布尔值，GitHub Actions 的
+      # env 只接受字符串，写裸值会触发 "Value cannot be a boolean" 校验错误。
+      GIT_CONFIG_VALUE_0: "false"
+
+    steps:
+      - name: Checkout (no EOL normalization)
+        uses: actions/checkout@v4
+        with:
+          # -text 已在 .gitattributes 声明；这里再显式关掉 autocrlf
+          fetch-depth: 1
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: ${{ matrix.rust }}
+          # 刻意各平台用 runner 默认 host：本机验证过的是 x86_64-pc-windows-gnu，
+          # 而 windows-latest 默认是 MSVC。让 CI 覆盖一条**不同于本机**的工具链
+          # 反而扩大了 G4 的证据面（同一字节输入在更多编译器/链接器组合下产出相同字节）。
+          # 不强制 GNU 也避免在 CI 上拼装 MinGW 路径这一脆弱变量。
+
+      - name: Rust cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: "core -> core/target"
+
+      # 门禁 1：可移植完整性校验（锚 / 副本一致 / EOL 未归一化 / JSON 结构 / KDF 约束）
+      - name: Vector archive integrity (portable checker)
+        shell: bash
+        run: python3 tools/check_vectors.py
+
+      # 门禁 2：全部 Rust 测试，含 vectors.rs(8) + conformance.rs(4) + mount.rs(6) + 7 KAT
+      - name: cargo test --workspace
+        shell: bash
+        working-directory: core
+        run: |
+          if [ "${{ runner.os }}" = "Windows" ]; then
+            export PATH="/c/mingw64/bin:$PATH"
+          fi
+          cargo test --workspace --locked
+
+      # 门禁 3：编译所有二进制（恢复 CLI + mylock-serve），确保门禁不止跑测试目标
+      - name: cargo build --workspace
+        shell: bash
+        working-directory: core
+        run: cargo build --workspace --locked
+
+      # 门禁 4：本平台指纹再独立打一次（与 conformance.rs 的断言互为交叉验证）
+      - name: Independent G4 fingerprint (this runner)
+        shell: bash
+        run: python3 tools/compute_fingerprint.py
+
+  # -------------------------------------------------------------------------
+  # 汇总门禁。只依赖三桌面平台；Android/iOS 未实现，不计入 needs。
+  # 若未来某端实现完成，按其 CONTRACT.md 激活条件新增 job 并加入 needs。
+  # -------------------------------------------------------------------------
+  g4-gate:
+    name: G4 desktop gate
+    runs-on: ubuntu-latest
+    needs: [g4-vectors]
+    if: always()
+    steps:
+      - name: Require all three desktop runners green
+        shell: bash
+        run: |
+          result='${{ needs.g4-vectors.result }}'
+          echo "g4-vectors matrix result: $result"
+          if [ "$result" != "success" ]; then
+            echo "::error::G4 desktop conformance did not pass on every runner"
+            exit 1
+          fi
+          echo "OK: Windows / macOS / Linux all reproduce the frozen G4 fingerprint."
+          echo "NOTE: Android / iOS are NOT part of this gate (no implementation yet)."

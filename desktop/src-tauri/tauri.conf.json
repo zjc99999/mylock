@@ -1,0 +1,34 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "MyLock",
+  "version": "0.1.0",
+  "identifier": "com.mylock.desktop.scaffold",
+  "build": {
+    "frontendDist": "../ui"
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "MyLock · 透明加密文件夹（M5 · 进程内引擎 · 封闭内测）",
+        "width": 900,
+        "height": 620,
+        "resizable": true
+      }
+    ],
+    "security": {
+      "csp": null
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": ["nsis", "msi"],
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.ico"
+    ],
+    "shortDescription": "本地优先、零知识的私人数据保险柜（M5 桌面内测版）",
+    "longDescription": "MyLock 桌面内测版：进程内启动 loopback-only WebDAV 引擎并自动 net use 映射盘符，解锁后得到一个透明加密文件夹，锁定或整盘拷贝走仍是保险柜。非 WinFsp/FUSE 驱动级挂载；loopback 无 per-request 认证；解锁态只缓解风险。本版本未经第三方安全审计、未代码签名，仅用于封闭内测，请勿存放不可替代的唯一副本；不构成产品发布或合规结论。"
+  }
+}

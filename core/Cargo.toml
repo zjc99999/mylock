@@ -1,0 +1,11 @@
+[workspace]
+resolver = "2"
+members = ["crates/mylock-core", "crates/mylock-cli", "crates/mylock-mount"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+license = "MIT OR Apache-2.0"
+
+# M2 内核实现。密码学 crate 钉死为 2026-11-14 核实过的版本，
+# 保证 vault-format-spec.md v1.1.1 / poc/test-vectors.json 的逐字节契约可复现。

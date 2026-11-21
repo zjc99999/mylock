@@ -1,0 +1,212 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MyLock · 透明加密文件夹（M5 · 进程内引擎 · 封闭内测）</title>
+<style>
+  :root { color-scheme: dark; }
+  body { margin:0; background:#0e1116; color:#e7ecf3;
+         font:15px/1.6 -apple-system,"Segoe UI","Microsoft YaHei",sans-serif; }
+  main { max-width:780px; margin:0 auto; padding:32px 24px 60px; }
+  h1 { font-size:21px; margin:0 0 6px; }
+  h2 { font-size:15px; margin:26px 0 8px; color:#9ecbff; font-weight:600; }
+  .sub { color:#8b98a9; font-size:13px; margin-bottom:20px; }
+  label { display:block; margin:14px 0 5px; color:#aeb9c9; font-size:13px; }
+  input[type=text], input[type=password], input[type=number] {
+    width:100%; box-sizing:border-box; padding:9px 11px; border-radius:7px;
+    border:1px solid #2b3442; background:#161c26; color:#e7ecf3; font-size:14px; }
+  .grid { display:flex; gap:12px; flex-wrap:wrap; }
+  .grid > div { flex:1 1 220px; }
+  .row { display:flex; gap:10px; flex-wrap:wrap; margin-top:18px; }
+  button { padding:9px 18px; border-radius:7px; border:1px solid #2b3442;
+           background:#1b2431; color:#e7ecf3; cursor:pointer; font-size:14px; }
+  button.primary { background:#2563eb; border-color:#2563eb; }
+  button.create { background:#7a4a12; border-color:#a5681c; }
+  button:disabled { opacity:.45; cursor:not-allowed; }
+  pre { white-space:pre-wrap; word-break:break-word; margin-top:18px; padding:14px;
+        border-radius:8px; background:#11161f; border:1px solid #242c39;
+        font:12.5px/1.55 ui-monospace,Consolas,monospace; color:#c8d3e2; min-height:60px; }
+  /* 使用前必读：最醒目的提示，放在最顶部 */
+  .mustread { margin:0 0 20px; padding:14px 16px; border-left:3px solid #e05555;
+              background:#1c1113; border-radius:6px; font-size:13px; color:#f0c9c9; }
+  .mustread b { color:#ff9d9d; }
+  .mustread ol { margin:8px 0 0; padding-left:20px; }
+  .warn { margin-top:22px; padding:14px 16px; border-left:3px solid #d9a441;
+          background:#1a1710; border-radius:6px; font-size:13px; color:#d8c9a8; }
+  /* Recovery Key 醒目展示 */
+  .rk { display:none; margin-top:18px; padding:16px; border-radius:8px;
+        border:2px solid #3fb96b; background:#0d1c14; }
+  .rk .rklabel { color:#7fe2a5; font-size:13px; font-weight:600; margin-bottom:8px; }
+  .rk .rkvalue { font:16px/1.5 ui-monospace,Consolas,monospace; color:#eafff1;
+                 word-break:break-all; letter-spacing:.5px; user-select:all; }
+  .rk .rkhint { color:#8fbf9f; font-size:12px; margin-top:10px; }
+  code { color:#9ecbff; }
+</style>
+</head>
+<body>
+<main>
+  <h1>MyLock · 透明加密文件夹</h1>
+  <div class="sub">M5 桌面端到端收口 — 本地优先 / 零知识 / 无账号 / 无遥测 / 无 AI。解锁后自动 <code>net use</code> 映射盘符，可像普通文件夹一样编辑；锁定时自动断开。此界面不是产品发布、安装包未签名、本版本未经第三方安全审计。</div>
+
+  <div class="mustread">
+    <b>⚠ 使用前必读（第一次用请先看这里）</b>
+    <ol>
+      <li><b>这不是「原地加密」</b>：MyLock 不会把你已有的文件夹（例如 <code>E:\testLock</code>）变成加密文件夹，也<b>没有「加密 / 解密」按钮</b>。它是在<b>另一个全新空路径</b>新建一个「密文保险柜」目录；你原来的明文文件始终原样保留、MyLock 不会删。</li>
+      <li><b>「加密」= 把文件拖进解锁后的 Z: 盘</b>；<b>「解密」= 解锁后从 Z: 盘拷出来</b>。锁定时磁盘上只剩密文，整个文件夹拷到移动硬盘仍是保险柜。</li>
+      <li>第一次用先点 <b>①「新建保险柜」</b>；以后每次用点 <b>②「解锁并映射」</b>。若直接拿一个还没有保险柜的路径去解锁，会提示「找不到 vault.meta」。</li>
+      <li><b>新建目标必须是全新空路径</b>：若路径已存在且非空，建库会清空该目录（内核会 <code>remove_dir_all</code>）。请勿指向任何有文件的目录。</li>
+      <li>建库后会返回一串 <b>Recovery Key</b>——请<b>立刻离线抄存</b>，这是忘记口令时唯一的解锁兜底。</li>
+      <li><b>本版本未经第三方安全审计、安装包未代码签名；请勿存放不可替代的唯一副本。</b></li>
+    </ol>
+  </div>
+
+  <label>Vault 根目录（密文容器所在路径，可位于移动硬盘）</label>
+  <input id="root" type="text" placeholder="D:\MyVault 或 E:\testLockVault（新建时须为全新空路径）">
+
+  <label>主口令（新建 / 解锁都用这个；解锁时与下方 Recovery Key 二选一）</label>
+  <input id="password" type="password" placeholder="主口令">
+
+  <label>Recovery Key 展示码（可选，仅忘口令解锁时用；与主口令二选一）</label>
+  <input id="recovery" type="text" placeholder="留空则用主口令">
+
+  <div class="grid">
+    <div>
+      <label>映射盘符（默认 Z）</label>
+      <input id="drive" type="text" value="Z" placeholder="单个字母，如 Z">
+    </div>
+    <div>
+      <label>loopback 端口（默认 4918）</label>
+      <input id="port" type="number" value="4918">
+    </div>
+  </div>
+
+  <h2>① 第一次使用：新建保险柜（把原来的 Step 1 收进界面）</h2>
+  <div class="row">
+    <button id="createBtn" class="create">新建保险柜</button>
+  </div>
+  <div style="color:#8b98a9;font-size:12.5px;margin-top:8px">
+    点击后会再次弹出确认框，把「不是原地加密 / 目标须全新空路径 / 会清空已存在目录 / 请抄存 Recovery Key」逐条念给你听。
+    仅在第一次建库时用；建好后不要再点（会拒绝覆盖非空目录）。
+  </div>
+
+  <div class="rk" id="rkPanel">
+    <div class="rklabel">★ 请立刻离线抄存 Recovery Key（关闭本窗口后不会再次完整显示）</div>
+    <div class="rkvalue" id="rkValue"></div>
+    <div class="rkhint">忘记主口令时用它解锁（填到上面「Recovery Key 展示码」框、主口令留空）。换口令 / 换 RK 是零吊销，真正吊销旧密钥要用 <code>rotate-keys</code>。</div>
+    <div class="row"><button id="copyRkBtn">复制 Recovery Key</button></div>
+  </div>
+
+  <h2>② 日常使用：解锁 → 编辑 → 锁定</h2>
+  <div class="row">
+    <button id="openBtn" class="primary">解锁并映射</button>
+    <button id="closeBtn">锁定并断开</button>
+    <button id="verifyBtn">结构校验（不解锁）</button>
+    <button id="statusBtn">会话状态</button>
+    <button id="probeBtn">端口探测</button>
+  </div>
+
+  <pre id="out">就绪。第一次使用请先点「新建保险柜」；已有保险柜则填好路径与主口令后点「解锁并映射」，成功后在资源管理器里打开映射盘符（默认 Z:）。</pre>
+
+  <div class="warn">
+    <strong>安全边界（必须如实告知）：</strong>
+    这是 <code>loopback-only WebDAV</code>（引擎在桌面进程内，解锁后自动 <code>net use Z: http://127.0.0.1:4918/</code>），
+    <b>不是</b> WinFsp/FUSE 驱动级挂载；<b>无 per-request 认证</b>，任何本机进程都能访问挂载点；
+    仅在未解锁态防得住合法采集者，解锁态只缓解不消除；库外已存在的明文/临时副本锁定后不保证消失；
+    拒绝在 OneDrive / Dropbox / Google Drive / iCloud / 坚果云等同步目录内建库或挂载。
+    <br><br>
+    关于文件夹里的「隐藏 + 系统文件夹删除警告 + 保险柜图标」：这只是 <b>shell 层提示</b>，
+    用来减少误删（内部零件设为隐藏 + 系统、删除/移动时 Windows 会弹「You Are Deleting a System Folder」、
+    文件夹换成保险柜图标、并留一份可见的「⚠ 请勿删除.txt」）——
+    <b>不是防删 / 权限 / ACL 机制，不保证数据不丢失</b>；请勿存放不可替代的唯一副本。
+    <br><br>
+    <b>本版本未经第三方安全审计、安装包未代码签名。</b>
+    内核 / 桌面壳 ≠ 产品发布 ≠ 五端一致性验收 ≠ 第三方安全审计；封闭内测 ≠ 公开发布 / 商店上架。
+  </div>
+</main>
+<script>
+const $ = (id) => document.getElementById(id);
+const invoke = (cmd, args) =>
+  window.__TAURI_INTERNALS__ ? window.__TAURI_INTERNALS__.invoke(cmd, args) : Promise.reject('Tauri runtime 未就绪');
+const out = (t) => { $('out').textContent = t; };
+const errText = (e) => (typeof e === 'string' ? e : (e && e.message) ? e.message : JSON.stringify(e));
+// password 模式必须把 recovery 传成 null（缺字段/None），否则后端会判定「两者都给了」。
+const args = () => {
+  const rec = $('recovery').value.trim();
+  return {
+    root: $('root').value.trim(),
+    password: $('password').value,
+    port: parseInt($('port').value || '4918', 10),
+    drive: $('drive').value.trim() || 'Z',
+    recovery: rec ? rec : null
+  };
+};
+
+const showRk = (rk) => { $('rkValue').textContent = rk; $('rkPanel').style.display = 'block'; };
+const fallbackCopy = (t) => {
+  const ta = document.createElement('textarea');
+  ta.value = t; ta.style.position = 'fixed'; ta.style.opacity = '0';
+  document.body.appendChild(ta); ta.select();
+  try { document.execCommand('copy'); out('Recovery Key 已复制，请粘贴到【离线】介质保存（不要只留剪贴板）。'); }
+  catch (e) { out('自动复制不可用，请手动选中上方绿色的 Recovery Key 抄存：' + errText(e)); }
+  document.body.removeChild(ta);
+};
+$('copyRkBtn').onclick = () => {
+  const t = $('rkValue').textContent;
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(t)
+      .then(() => out('Recovery Key 已复制，请粘贴到【离线】介质保存（不要只留剪贴板）。'))
+      .catch(() => fallbackCopy(t));
+  } else { fallbackCopy(t); }
+};
+
+// ① 新建保险柜：先弹「使用前必要提示」确认框，再调用内核（与 CLI 同一实现）。
+$('createBtn').onclick = async () => {
+  const root = $('root').value.trim();
+  const pw = $('password').value;
+  if (!root) { out('请先填写「Vault 根目录」：一个全新空路径。'); return; }
+  if (!pw) { out('请先填写「主口令」（新建保险柜用）。'); return; }
+  const danger =
+    '【新建保险柜 · 使用前必要提示】\n\n' +
+    '1. 这不是「原地加密」：MyLock 不会加密你已有的文件夹（如 E:\\testLock），\n' +
+    '   而是在下面这个【新路径】新建一个密文保险柜；原明文目录不会被删改。\n' +
+    '   目标路径：' + root + '\n' +
+    '2. 目标必须是【全新空路径】：若已存在且非空，建库会【清空整个目录】\n' +
+    '   （内核 write_vault 内部 remove_dir_all）。请勿指向任何有文件的目录。\n' +
+    '3. 拒绝在云同步目录（OneDrive/Dropbox/Google Drive/iCloud/坚果云等）内建库。\n' +
+    '4. 建库后会返回 Recovery Key，请【立刻离线抄存】——忘记口令时唯一兜底。\n' +
+    '5. 本版本未经第三方安全审计、安装包未代码签名；请勿存放不可替代的唯一副本。\n\n' +
+    '已确认路径无误并理解以上 5 条吗？';
+  if (!window.confirm(danger)) { out('已取消新建（未改动任何文件）。'); return; }
+  try {
+    out('正在新建保险柜…');
+    const r = await invoke('create_vault', { root: root, password: pw });
+    out(r.message);
+    showRk(r.recovery_key);
+  } catch (e) { out('错误：' + errText(e)); }
+};
+
+// ② 日常：解锁 / 锁定 / 结构校验 / 会话状态 / 端口探测
+$('openBtn').onclick = async () => {
+  try { out('正在解锁并映射…'); out(await invoke('open_vault', args())); }
+  catch (e) { out('错误：' + errText(e)); }
+};
+$('closeBtn').onclick = async () => {
+  try { out(await invoke('close_vault', {})); } catch (e) { out('错误：' + errText(e)); }
+};
+$('statusBtn').onclick = async () => {
+  try { out('会话运行中：' + (await invoke('status', {}))); } catch (e) { out('错误：' + errText(e)); }
+};
+$('verifyBtn').onclick = async () => {
+  try { out(await invoke('verify', { root: $('root').value.trim() })); }
+  catch (e) { out('错误：' + errText(e)); }
+};
+$('probeBtn').onclick = async () => {
+  try {
+    const free = await invoke('probe_port', { port: parseInt($('port').value || '4918', 10) });
+    out(free ? '端口可用（当前未被占用）。' : '端口已被占用，请换一个端口。');
+  } catch (e) { out('错误：' + errText(e)); }
+};
+</script>
+</body>
+</html>
