@@ -13,9 +13,9 @@ MyLock 把本机的一组文件加密成一个**静态的普通文件目录（va
 本项目目前是 **v0.1.0 / alpha / 邀请制封闭内测**，**尚未公开发布**。
 
 - ❌ **未经第三方安全审计**（internal 密码学评审 ≠ 第三方审计）
-- ❌ **未代码签名、未产出可分发安装包**（当前仅有未签名便携包，仅供内测）
+- ❌ **未代码签名、未产出可分发安装包**（桌面为未签名便携包；Android 为 debug 调试签名、可侧载 APK，均仅供内测）
 - ❌ **未上架任何应用商店**
-- ❌ **移动端（Android / iOS）尚未实现**，仅有可行性设计与研究文档，未产出 APK
+- 🟢 **Android 最小可用已实现并真机验收**（封闭内测/debug 签名，详见下文），可侧载 APK；**iOS 仍未实现**
 - ⚠️ **请勿存放不可替代的唯一副本**——现在是内测软件，不是备份产品的替代品
 
 对外发布的四道外部闸门（A 第三方安全审计 / B 律师签发 / C 代码签名 + 可分发包 / D 商店申报）**全部未完成**。本仓库是**开源源码发布**，不等于**产品发布 / 上架 / 合规认证**。
@@ -45,7 +45,7 @@ MyLock 把本机的一组文件加密成一个**静态的普通文件目录（va
 |---|---|---|
 | **桌面（Windows）** | 透明加密文件夹：把 vault 通过 loopback WebDAV 映射为 OS 盘符（如 `Z:`），**非驱动级**（非 WinFsp/FUSE） | ✅ 已实现并本机验收 |
 | **恢复 CLI** | `mylock` 命令行，9 个命令（见下） | ✅ 已实现并本机验收 |
-| **Android** | 生物识别暗格 | 🔴 仅可行性设计，**未实现** |
+| **Android** | 生物识别暗格（Tauri 2 + 自定义 Kotlin mobile plugin，复用唯一 mylock-core） | 🟢 最小可用已实现并真机验收（封闭内测 / debug 签名 / 未上架，见下） |
 | **iOS** | 生物识别暗格 | 🔴 仅可行性设计，**未实现** |
 
 核心能力：
@@ -61,6 +61,38 @@ MyLock 把本机的一组文件加密成一个**静态的普通文件目录（va
 `mylock info` / `verify` / `create` / `export` / `export-object` / `change-password` / `rotate-recovery` / `rotate-keys` / `mount`（mount 命令在独立 CLI 中拒绝执行，桌面层负责实际映射）。
 
 > 注意：`create` 会清空（`remove_dir_all`）已存在的目标目录——**务必指定一个全新的空路径**。`export` 会摊平目录层级。
+
+---
+
+## 界面截图
+
+以下截图均为封闭内测版本机/真机实拍，非概念图。图片源文件在 [docs/screenshots/](docs/screenshots/)。
+
+### Android（arm64，Redmi / Android 12 真机）
+
+主界面：新建保险柜、口令/Recovery Key 解锁、生物识别解锁、诊断自检入口。
+
+![Android 主界面](docs/screenshots/android-01-main.png)
+
+解锁后状态与文件列表（明文仅在内存，不落盘）。
+
+![Android 解锁后状态](docs/screenshots/android-03-unlocked.png)
+
+G4 一致性自检真机结果：30/30 derived、指纹 `d45b8659…02fa`、p=4、`ok=true`。
+
+![Android G4 自检结果](docs/screenshots/android-02-g4-result.png)
+
+### Windows 桌面（透明加密文件夹，M5 进程内引擎）
+
+主界面：使用前必读、vault 根目录、主口令/Recovery Key、盘符与 loopback 端口。
+
+![Windows 主界面](docs/screenshots/windows-01-main.png)
+
+日常操作区：新建保险柜、解锁映射、结构校验与状态。
+
+![Windows 操作区](docs/screenshots/windows-02-controls.png)
+
+> 说明：两端均为 alpha 封闭内测界面，Android 为 debug 调试签名、未上架；截图不构成发布或审计结论。
 
 ---
 
@@ -126,7 +158,8 @@ cargo check
 
 - ✅ Windows / Rust 内核 / 恢复 CLI：**已验收**
 - 🟡 macOS / Linux：CI 已配置（[vectors.yml](.github/workflows/vectors.yml)），**未实跑**（推送到 GitHub 启用 Actions 后才跑）
-- 🔴 Android / iOS：**未实现**
+- 🟢 Android：**真机已验收**（Redmi M2004J7BC / Android 12 / arm64），同一份 test-vectors.json 达 30/30 derived、13/13 negative、指纹 `d45b8659…02fa`、p=4 Argon2id、`ok=true`；生物识别与口令双路解锁结果逐字段一致。可侧载 APK：`dist/mylock-android-arm64-v0.1.0-alpha-debug.apk`（debug 签名，仅供内测，未上架）
+- 🔴 iOS：**未实现**
 
 CI 尚未在本机以外跑过，推送后请留意首次实跑结果。详见 [tests/vectors/CONTRACT.md](tests/vectors/CONTRACT.md)。
 

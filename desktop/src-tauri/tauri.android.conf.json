@@ -1,0 +1,25 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "identifier": "com.mylock.mobile.alpha",
+  "productName": "MyLock",
+  "version": "0.1.0",
+  "build": {
+    "frontendDist": "../ui-mobile"
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "MyLock · 加密暗格（封闭内测）",
+        "width": 400,
+        "height": 720,
+        "resizable": true
+      }
+    ],
+    "security": {
+      "csp": null
+    }
+  },
+  "bundle": {
+    "active": false
+  }
+}

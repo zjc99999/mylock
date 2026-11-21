@@ -4,11 +4,17 @@ version = "0.1.0"
 edition = "2021"
 rust-version = "1.77.2"
 license = "MIT OR Apache-2.0"
-description = "MyLock 桌面壳（M3 脚手架 · 非产品发布）"
+description = "MyLock 桌面壳 + Android 移动端（封闭内测 · 非产品发布）"
 
 # 独立 workspace：与 core/ 的密码学 workspace 隔离，
 # 避免 Tauri 的重依赖影响 core/ 里已全绿的 21 个测试。
 [workspace]
+
+# Tauri Android 构建编译的是库 crate（JNI .so），不是桌面二进制。
+# lib.rs 提供 #[cfg_attr(mobile, tauri::mobile_entry_point)] 入口；桌面仍走 main.rs。
+[lib]
+name = "mylock_mobile"
+crate-type = ["staticlib", "cdylib", "rlib"]
 
 [build-dependencies]
 tauri-build = { version = "2.7.4", features = [] }

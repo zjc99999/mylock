@@ -7,6 +7,7 @@ desktop/src-tauri/binaries/
 
 # 本机验证与日志（不入库）
 *.log
+*.err
 tools/*.out
 tools/*.err
 acl-recovery/

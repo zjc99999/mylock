@@ -1,0 +1,161 @@
+MyLock 开源发布 — 待提交文件清单
+生成时间: 2026-11-21 14:04:28 +08:00
+Git 仓库: D:\Projects\dsh\mylock （git init 已完成，文件已 git add 暂存，尚未 commit）
+
+暂存文件总数: 136
+
+=== 按顶层目录分类 ===
+  40  tools
+  30  (根目录)
+  25  core
+  21  poc
+  16  desktop
+   3  tests
+   1  .github
+
+=== 完整清单 ===
+  1. .gitattributes
+  2. .github/workflows/vectors.yml
+  3. .gitignore
+  4. BETA-NOTICE.md
+  5. BIS-742.15b-notice-template.md
+  6. LICENSE-APACHE
+  7. LICENSE-MIT
+  8. README.md
+  9. THIRD_PARTY_NOTICES.md
+ 10. USER-GUIDE.md
+ 11. android-feasibility.md
+ 12. core/Cargo.lock
+ 13. core/Cargo.toml
+ 14. core/crates/mylock-cli/Cargo.toml
+ 15. core/crates/mylock-cli/src/main.rs
+ 16. core/crates/mylock-core/Cargo.toml
+ 17. core/crates/mylock-core/src/lib.rs
+ 18. core/crates/mylock-core/tests/conformance.rs
+ 19. core/crates/mylock-core/tests/vectors.rs
+ 20. core/crates/mylock-mount/Cargo.toml
+ 21. core/crates/mylock-mount/src/bin/mylock-serve.rs
+ 22. core/crates/mylock-mount/src/lib.rs
+ 23. core/crates/mylock-mount/tests/mount.rs
+ 24. core/smoke/note.txt
+ 25. core/smoke/out/note.txt
+ 26. core/smoke/out3/note.txt
+ 27. core/smoke/rotated/README.txt
+ 28. core/smoke/rotated/d/GN/GN3DSZ3FGR3MSCDFSYQIDHJGQ4
+ 29. core/smoke/rotated/manifest
+ 30. core/smoke/rotated/vault.meta
+ 31. core/smoke/rotated/vault.meta.bak
+ 32. core/smoke/vault/README.txt
+ 33. core/smoke/vault/d/OJ/OJTNYCAEKTW7EUNA6V7GRXTOD4
+ 34. core/smoke/vault/manifest
+ 35. core/smoke/vault/vault.meta
+ 36. core/smoke/vault/vault.meta.bak
+ 37. crypto-review-m1.md
+ 38. desktop/SIGNING.md
+ 39. desktop/src-tauri/Cargo.lock
+ 40. desktop/src-tauri/Cargo.toml
+ 41. desktop/src-tauri/build.rs
+ 42. desktop/src-tauri/gen/schemas/acl-manifests.json
+ 43. desktop/src-tauri/gen/schemas/capabilities.json
+ 44. desktop/src-tauri/gen/schemas/desktop-schema.json
+ 45. desktop/src-tauri/gen/schemas/windows-schema.json
+ 46. desktop/src-tauri/icons/128x128.png
+ 47. desktop/src-tauri/icons/128x128@2x.png
+ 48. desktop/src-tauri/icons/32x32.png
+ 49. desktop/src-tauri/icons/MyLockVault.ico
+ 50. desktop/src-tauri/icons/icon.ico
+ 51. desktop/src-tauri/src/main.rs
+ 52. desktop/src-tauri/tauri.conf.json
+ 53. desktop/ui/index.html
+ 54. local-first-privacy-research.md
+ 55. m2-report.md
+ 56. m3-architecture.md
+ 57. m3-report.md
+ 58. m4-report.md
+ 59. m4-step2-report.md
+ 60. m4-step3-report.md
+ 61. m4-step4-report.md
+ 62. m5-report.md
+ 63. mobile-vault-research.md
+ 64. poc-report-m1.md
+ 65. poc/export_out/empty.bin
+ 66. poc/export_out/hello.txt
+ 67. poc/mylock_poc.py
+ 68. poc/probe_argon2.py
+ 69. poc/probe_libs.py
+ 70. poc/probe_node.mjs
+ 71. poc/test-vectors.json
+ 72. poc/usb_copy/README.txt
+ 73. poc/usb_copy/d/AA/AAAQEAYEAUDAOCAJBIFQYDIOB4
+ 74. poc/usb_copy/d/CA/CAIREEYUCULBOGAZDINRYHI6D4
+ 75. poc/usb_copy/manifest
+ 76. poc/usb_copy/vault.meta
+ 77. poc/usb_copy/vault.meta.bak
+ 78. poc/vault_poc/README.txt
+ 79. poc/vault_poc/d/AA/AAAQEAYEAUDAOCAJBIFQYDIOB4
+ 80. poc/vault_poc/d/CA/CAIREEYUCULBOGAZDINRYHI6D4
+ 81. poc/vault_poc/manifest
+ 82. poc/vault_poc/vault.meta
+ 83. poc/vault_poc/vault.meta.bak
+ 84. poc/verify-primitives.json
+ 85. poc/verify_primitives.py
+ 86. prelaunch-checklist.md
+ 87. privacy-policy.md
+ 88. security-whitepaper.md
+ 89. tests/vectors/CONTRACT.md
+ 90. tests/vectors/SHA256SUMS
+ 91. tests/vectors/test-vectors.json
+ 92. threat-model.md
+ 93. tools/align-v19.py
+ 94. tools/assemble-beta.ps1
+ 95. tools/audit_licenses.py
+ 96. tools/check_vectors.py
+ 97. tools/check_versions.py
+ 98. tools/compute_fingerprint.py
+ 99. tools/dump_aead.py
+100. tools/dump_aeskw_final.py
+101. tools/dump_api_critical.py
+102. tools/dump_api_exact.py
+103. tools/dump_api_last.py
+104. tools/dump_array_api.py
+105. tools/dump_final_api.py
+106. tools/dump_getrandom.py
+107. tools/dump_params.py
+108. tools/e2e-probe.ps1
+109. tools/gate_selftest.py
+110. tools/gen_third_party_notices.py
+111. tools/inspect_crates.py
+112. tools/inspect_crates2.py
+113. tools/inspect_crates3.py
+114. tools/install-rust.ps1
+115. tools/m3-smoke.ps1
+116. tools/make_icons.py
+117. tools/make_vault_icon.py
+118. tools/prepare-sidecar.ps1
+119. tools/probe-attrib.ps1
+120. tools/probe-folder-workflow.ps1
+121. tools/probe-guide-numbers.ps1
+122. tools/probe-nested-folder.ps1
+123. tools/probe-userguide.ps1
+124. tools/probe_dav.py
+125. tools/probe_dav2.py
+126. tools/probe_dav3.py
+127. tools/probe_dav4.py
+128. tools/probe_dav5.py
+129. tools/probe_davpath.py
+130. tools/probe_m3_deps.py
+131. tools/verify-beta-final.ps1
+132. tools/verify-m4s4.ps1
+133. vault-format-spec.md
+134. zerocost-compliance-report.md
+135. "\344\272\247\345\223\201\345\210\206\346\236\220\344\270\216\346\246\202\350\246\201\350\256\276\350\256\241.md"
+136. "\351\241\271\347\233\256\346\200\273\347\273\223\346\212\245\345\221\212.md"
+
+=== 已通过 .gitignore 排除（不入库）===
+dist/                       内测便携包/未签名 exe/zip（用 GitHub Releases 单独发）
+tools/*.txt / *.png / rustup-init.exe   一次性 API dump、图标预览、工具链引导程序
+*.log / tools/*.out / *.err 本机验证日志
+core/target/ desktop/src-tauri/target/  编译产物
+acl-recovery/               本机 ACL 恢复脚本/报告
+_fetch_*.html               外部网页抓取缓存
+.DS_Store / Thumbs.db

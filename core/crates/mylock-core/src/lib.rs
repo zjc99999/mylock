@@ -27,6 +27,10 @@ use serde_json::{json, Map, Value};
 use sha2::{Digest, Sha256};
 use zeroize::Zeroizing;
 
+/// G4 跨平台一致性验证：把 conformance.rs 的私有契约算法提升为公开 API，
+/// 供桌面壳 / Android Tauri 命令复用同一份实现（避免两份实现漂移）。
+pub mod g4;
+
 // ---------------------------------------------------------------------------
 // 冻结常量（vault-format-spec.md §2.1 / PoC 常量）
 // ---------------------------------------------------------------------------
@@ -1314,8 +1318,21 @@ fn mutate_bytes(path: &Path, f: impl Fn(&mut Vec<u8>)) {
 
 pub fn run_negative_vectors(base: &Path, fi: &FixedInputs) -> Result<Vec<NegResult>, CoreError> {
     let tmp = std::env::temp_dir().join(format!("mylock-m2-neg-{}", std::process::id()));
-    let _ = fs::remove_dir_all(&tmp);
-    fs::create_dir_all(&tmp).map_err(io)?;
+    run_negative_vectors_in(base, fi, &tmp)
+}
+
+/// 与 [`run_negative_vectors`] 相同，但由调用方指定临时工作目录 `tmp`。
+///
+/// Android 上 `std::env::temp_dir()` 指向的 /data/local/tmp 可能不可写或
+/// noexec，导致 13 项负向向量无法 clone_tree；上层可用应用私有 cache 目录
+/// （如 Tauri `app.path().app_cache_dir()`）调用本函数。
+pub fn run_negative_vectors_in(
+    base: &Path,
+    fi: &FixedInputs,
+    tmp: &Path,
+) -> Result<Vec<NegResult>, CoreError> {
+    let _ = fs::remove_dir_all(tmp);
+    fs::create_dir_all(tmp).map_err(io)?;
     let pw = fi.passphrase_utf8.as_slice();
 
     fn one(

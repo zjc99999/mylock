@@ -1,0 +1,235 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>MyLock · 加密暗格（封闭内测）</title>
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:#0e1116; color:#e7ecf3;
+         font:15px/1.6 -apple-system,"Segoe UI","Microsoft YaHei",sans-serif;
+         padding: env(safe-area-inset-top) 0 env(safe-area-inset-bottom); }
+  main { padding:18px 16px 40px; }
+  h1 { font-size:19px; margin:0 0 4px; }
+  h2 { font-size:14px; margin:22px 0 8px; color:#9ecbff; font-weight:600; }
+  .sub { color:#8b98a9; font-size:12.5px; margin-bottom:14px; }
+  label { display:block; margin:12px 0 5px; color:#aeb9c9; font-size:13px; }
+  input[type=text], input[type=password] {
+    width:100%; padding:10px 12px; border-radius:8px; font-size:15px;
+    border:1px solid #2b3442; background:#161c26; color:#e7ecf3; }
+  button { padding:11px 14px; border-radius:8px; border:1px solid #2b3442;
+           background:#1b2431; color:#e7ecf3; cursor:pointer; font-size:14px; }
+  button.primary { background:#2563eb; border-color:#2563eb; }
+  button.create { background:#7a4a12; border-color:#a5681c; }
+  button.bio { background:#0f6b57; border-color:#149276; }
+  button:disabled { opacity:.45; cursor:not-allowed; }
+  .row { display:flex; gap:9px; flex-wrap:wrap; margin-top:14px; }
+  .row > button { flex:1 1 auto; }
+  pre { white-space:pre-wrap; word-break:break-word; margin-top:14px; padding:12px;
+        border-radius:8px; background:#11161f; border:1px solid #242c39;
+        font:12.5px/1.55 ui-monospace,Consolas,monospace; color:#c8d3e2; min-height:48px; }
+  .mustread { padding:12px 14px; border-left:3px solid #e05555; background:#1c1113;
+              border-radius:6px; font-size:12.5px; color:#f0c9c9; }
+  .mustread b { color:#ff9d9d; }
+  .rk { display:none; margin-top:14px; padding:14px; border-radius:8px;
+        border:2px solid #3fb96b; background:#0d1c14; }
+  .rk .rklabel { color:#7fe2a5; font-size:13px; font-weight:600; margin-bottom:8px; }
+  .rk .rkvalue { font:15px/1.5 ui-monospace,Consolas,monospace; color:#eafff1;
+                 word-break:break-all; user-select:all; }
+  .entry { padding:11px 12px; border-radius:8px; border:1px solid #2b3442;
+           background:#161c26; margin-top:8px; }
+  .entry .nm { font-size:14px; color:#e7ecf3; word-break:break-all; }
+  .entry .mt { font-size:12px; color:#8b98a9; margin-top:3px; }
+  .warn { margin-top:22px; padding:12px 14px; border-left:3px solid #d9a441;
+          background:#1a1710; border-radius:6px; font-size:12.5px; color:#d8c9a8; }
+  code { color:#9ecbff; }
+  .chip { display:inline-block; padding:2px 8px; border-radius:10px; font-size:11px;
+          background:#1d2b3a; color:#9ecbff; margin-left:6px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>MyLock · 加密暗格 <span class="chip" id="verChip">α 内测</span></h1>
+  <div class="sub">本地优先 / 零知识 / 无账号 / 无遥测。文件在本机加解密，<b>不上传、不解密落盘</b>。封闭内测 · 未审计 · 未签名。</div>
+
+  <div class="mustread">
+    <b>⚠ 首次使用必读</b><br>
+    ① 这不是「原地加密」：它在应用私有目录新建一个<b>密文保险柜</b>，不会动你已有的文件。<br>
+    ② 建库后会给一串 <b>Recovery Key</b>，请<b>立刻离线抄存</b>——忘记口令时唯一兜底。<br>
+    ③ 请勿存放不可替代的唯一副本；生物识别只是解锁快捷方式，<b>口令始终可用</b>。
+  </div>
+
+  <h2>① 新建保险柜（仅首次）</h2>
+  <label>保险柜名称（在应用私有目录内新建，须是全新名字）</label>
+  <input id="vaultName" type="text" placeholder="例如：myvault" value="myvault">
+  <label>主口令</label>
+  <input id="pwCreate" type="password" placeholder="设置主口令">
+  <div class="row"><button id="createBtn" class="create">新建保险柜</button></div>
+  <div class="rk" id="rkPanel">
+    <div class="rklabel">★ 立刻离线抄存 Recovery Key</div>
+    <div class="rkvalue" id="rkValue"></div>
+  </div>
+
+  <h2>② 日常：解锁 → 查看 → 锁定</h2>
+  <label>保险柜名称</label>
+  <input id="vaultNameOpen" type="text" placeholder="与新建时一致" value="myvault">
+  <label>主口令（与下方 Recovery Key 二选一）</label>
+  <input id="pwOpen" type="password" placeholder="主口令">
+  <label>Recovery Key 展示码（可选，忘口令时用）</label>
+  <input id="recovery" type="text" placeholder="留空则用主口令">
+  <div class="row">
+    <button id="unlockBtn" class="primary">口令解锁</button>
+    <button id="bioUnlockBtn" class="bio">生物识别解锁</button>
+  </div>
+  <div class="row">
+    <button id="bioEnrollBtn" class="bio">启用生物识别</button>
+    <button id="lockBtn">锁定</button>
+  </div>
+
+  <div id="sessionInfo" class="sub" style="margin-top:12px">未解锁</div>
+  <h2>文件列表</h2>
+  <div id="entries"></div>
+
+  <h2>诊断</h2>
+  <div class="row">
+    <button id="g4Btn">G4 一致性自检</button>
+    <button id="g4NegBtn">G4 深度自检(+负向)</button>
+  </div>
+
+  <pre id="out">就绪。</pre>
+
+  <div class="warn">
+    <strong>安全边界（如实告知）：</strong><br>
+    · 解密只在内存进行，<b>从不写明文到磁盘</b>；查看单文件时临时解码展示。<br>
+    · 生物识别用 Android Keystore 的 AES-GCM 密钥本机 wrap 一份口令副本；增删指纹会使它失效，届时请用口令解锁后重新「启用生物识别」。<br>
+    · 本版本未代码签名、未经第三方安全审计；封闭内测 ≠ 公开发布 / 商店上架。
+  </div>
+</main>
+<script>
+const $ = (id) => document.getElementById(id);
+const invoke = (cmd, args) => (window.__TAURI_INTERNALS__ && window.__TAURI_INTERNALS__.invoke)
+  ? window.__TAURI_INTERNALS__.invoke(cmd, args)
+  : Promise.reject('Tauri runtime 未就绪');
+const out = (t) => { $('out').textContent = t; };
+const errText = (e) => (typeof e === 'string' ? e : (e && e.message) ? e.message : JSON.stringify(e));
+
+let DATA_DIR = '';
+const vaultPath = (name) => DATA_DIR + '/vaults/' + (name || 'myvault').trim();
+
+async function init() {
+  try { DATA_DIR = await invoke('app_data_dir', {}); }
+  catch (e) { out('无法获取应用数据目录：' + errText(e)); }
+}
+init();
+
+function renderEntries(list) {
+  const box = $('entries');
+  box.innerHTML = '';
+  if (!list || !list.length) { box.innerHTML = '<div class="sub">（空保险柜，或尚未解锁）</div>'; return; }
+  for (const e of list) {
+    const d = document.createElement('div');
+    d.className = 'entry';
+    d.innerHTML = '<div class="nm"></div><div class="mt"></div>';
+    d.querySelector('.nm').textContent = e.name;
+    d.querySelector('.mt').textContent = (e.size || 0) + ' B · id ' + e.id;
+    d.onclick = async () => {
+      try {
+        out('读取「' + e.name + '」…');
+        const b64 = await invoke('read_object', { id: e.id });
+        const txt = b64ToText(b64);
+        out('文件：' + e.name + '\n————\n' + txt);
+      } catch (err) { out('读取失败：' + errText(err)); }
+    };
+    box.appendChild(d);
+  }
+}
+
+function b64ToText(b64) {
+  try {
+    const bin = atob(b64);
+    const bytes = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    return new TextDecoder('utf-8').decode(bytes);
+  } catch (e) { return '（二进制文件，无法按文本显示；base64 长度 ' + b64.length + '）'; }
+}
+
+function showSession(r) {
+  $('sessionInfo').textContent = '已解锁：' + r.root + ' · ' + r.records + ' 个文件';
+  renderEntries(r.entries);
+}
+
+$('createBtn').onclick = async () => {
+  const name = $('vaultName').value.trim();
+  const pw = $('pwCreate').value;
+  if (!name) { out('请填写保险柜名称。'); return; }
+  if (!pw) { out('请设置主口令。'); return; }
+  if (!window.confirm('确认在应用私有目录新建密文保险柜「' + name + '」？\n新建后会显示 Recovery Key，请立刻离线抄存。')) return;
+  try {
+    out('正在新建…');
+    const r = await invoke('create_vault', { root: vaultPath(name), password: pw });
+    out(r.message);
+    $('rkValue').textContent = r.recovery_key;
+    $('rkPanel').style.display = 'block';
+    $('vaultNameOpen').value = name;
+  } catch (e) { out('错误：' + errText(e)); }
+};
+
+async function doUnlock(password, slot) {
+  try {
+    out('正在解锁…');
+    const r = await invoke('unlock_vault', { root: vaultPath($('vaultNameOpen').value), password, slot });
+    showSession(r);
+    out(r.message);
+  } catch (e) { out('解锁失败：' + errText(e)); }
+}
+
+$('unlockBtn').onclick = async () => {
+  const rec = $('recovery').value.trim();
+  if (rec) await doUnlock(rec, 'recovery');
+  else await doUnlock($('pwOpen').value, 'password');
+};
+
+$('bioUnlockBtn').onclick = async () => {
+  try {
+    out('正在生物识别解锁…');
+    const r = await invoke('biometric_unlock', { root: vaultPath($('vaultNameOpen').value) });
+    showSession(r);
+    out(r.message);
+  } catch (e) { out('生物识别解锁失败：' + errText(e) + '\n可改用主口令解锁。'); }
+};
+
+$('bioEnrollBtn').onclick = async () => {
+  const pw = $('pwOpen').value;
+  if (!pw) { out('请先在上方填好主口令，再点「启用生物识别」。'); return; }
+  try {
+    out('正在启用生物识别…');
+    const r = await invoke('biometric_enroll', { root: vaultPath($('vaultNameOpen').value), passwordB64: toB64(pw) });
+    out(r);
+  } catch (e) { out('启用失败：' + errText(e)); }
+};
+
+function toB64(str) {
+  const bytes = new TextEncoder().encode(str);
+  let bin = '';
+  for (const b of bytes) bin += String.fromCharCode(b);
+  return btoa(bin);
+}
+
+$('lockBtn').onclick = async () => {
+  try { await invoke('lock_vault', {}); $('sessionInfo').textContent = '未解锁'; renderEntries([]); out('已锁定。'); }
+  catch (e) { out('错误：' + errText(e)); }
+};
+
+async function runG4(negative) {
+  try {
+    out('正在运行 G4 一致性自检' + (negative ? '（含负向，较慢）' : '') + '…');
+    const r = await invoke('g4_self_check', { runNegative: negative, workDir: negative ? DATA_DIR + '/g4work' : null });
+    out(JSON.stringify(r, null, 2));
+  } catch (e) { out('G4 自检失败：' + errText(e)); }
+}
+$('g4Btn').onclick = () => runG4(false);
+$('g4NegBtn').onclick = () => runG4(true);
+</script>
+</body>
+</html>
